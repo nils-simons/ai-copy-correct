@@ -1,35 +1,63 @@
 import pyperclip
 import keyboard
+import os
+import json
 from openai import OpenAI
-from win10toast import ToastNotifier
+# from plyer import notification
 
-toaster = ToastNotifier()
 
-client = OpenAI(api_key='API_KEY')
+
+if os.path.exists('./config.json'):
+    with open('./config.json') as configFile:
+        config = json.load(configFile)
+else:
+    with open('./config.json', 'w') as configFile:
+        configFile.write(json.dumps({
+            "shortcut": "ctrl+shift+k",
+            "openai-model": "gpt-4o-mini",
+            "openai-api-key": "ENTER YOUR OPENAI API KEY HERE",
+            "instructions": "correct this text and return just the corrected text: "
+        }))
+
+        # notification.notify(
+        #     title='AI Copy Correct',
+        #     message='Please enter your api key in the config file.',
+        #     app_name='AI Copy Correct',
+        #     timeout=8
+        # )
+
+client = OpenAI(api_key=config['openai-api-key'])
+
 
 def correct_text():
     clipboard_text = pyperclip.paste()
-    # print("Clipboard Text:", clipboard_text)
 
     completion = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model=config['openai-model'],
         messages=[
-            {"role": "user", "content": 'correct this text and return just the corrected text: '+clipboard_text}
+            {"role": "user", "content": config["instructions"]+clipboard_text}
         ]
     )
-
-    # print(completion.choices[0].message.content)
 
     pyperclip.copy(completion.choices[0].message.content)
 
 
-    toaster.show_toast(
-        "AIAC",
-        "Corrected Text coppied to clipboard.",
-        duration=2,
-    )
+    # notification.notify(
+    #     title='AI Copy Correct',
+    #     message='Corrected Text coppied to clipboard.',
+    #     app_name='AI Copy Correct',
+    #     timeout=8
+    # )
 
 
-keyboard.add_hotkey('ctrl+shift+k', correct_text)
+keyboard.add_hotkey(config['shortcut'], correct_text)
 
-input('')
+
+# notification.notify(
+#     title='AI Copy Correct',
+#     message='The Program is running in the background.',
+#     app_name='AI Copy Correct',
+#     timeout=6
+# )
+
+keyboard.wait('ctrl+shift+esc')
